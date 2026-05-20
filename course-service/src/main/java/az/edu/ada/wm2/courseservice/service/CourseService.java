@@ -78,7 +78,8 @@ public class CourseService {
 
     public EnrollmentResponseDto enrollStudent(Long courseId, Long studentId) {
         log.debug("Enrolling student {} into course {}", studentId, courseId);
-        findCourseOrThrow(courseId);
+
+        Course course = findCourseOrThrow(courseId);
 
         if (enrollmentRepository.existsByCourseIdAndStudentId(courseId, studentId)) {
             throw new EnrollmentAlreadyExistsException(courseId, studentId);
@@ -86,17 +87,33 @@ public class CourseService {
 
         validateStudentWithFeign(studentId);
 
+        if (course.getPrerequisiteCourseId() != null) {
+
+            boolean completed = enrollmentRepository.existsByCourseIdAndStudentId(
+                    course.getPrerequisiteCourseId(),
+                    studentId
+            );
+
+            if (!completed) {
+                throw new RuntimeException(
+                        "Student has not completed prerequisite course: "
+                                + course.getPrerequisiteCourseId()
+                );
+            }
+        }
+
         Enrollment enrollment = Enrollment.builder()
                 .courseId(courseId)
                 .studentId(studentId)
                 .build();
+
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
         return new EnrollmentResponseDto(
                 savedEnrollment.getId(),
                 savedEnrollment.getCourseId(),
                 savedEnrollment.getStudentId(),
-                enrollment.getEnrollmentDate(),
+                savedEnrollment.getEnrollmentDate(),
                 "Student enrolled successfully."
         );
     }
@@ -142,7 +159,8 @@ public class CourseService {
 
     private Course findCourseOrThrow(Long id) {
         log.debug("Looking up course {}", id);
-        return courseRepository.findById(id).orElseThrow(() -> new CourseNotFoundException(id));
+        return courseRepository.findById(id)
+                .orElseThrow(() -> new CourseNotFoundException(id));
     }
 
     private CourseResponseDto toCourseResponseDto(Course course) {
