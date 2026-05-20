@@ -34,6 +34,13 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler({InvalidPrerequisiteException.class, MissingPrerequisiteException.class})
+    public ResponseEntity<ApiErrorResponse> handlePrerequisiteError(
+            RuntimeException ex,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(StudentServiceCommunicationException.class)
     public ResponseEntity<ApiErrorResponse> handleStudentServiceCommunication(
             StudentServiceCommunicationException ex,

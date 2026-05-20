@@ -39,6 +39,13 @@ public class StudentService {
         return toResponseDto(student);
     }
 
+    public List<StudentResponseDto> searchStudentsByName(String name) {
+        return studentRepository.searchByName(name)
+                .stream()
+                .map(this::toResponseDto)
+                .toList();
+    }
+
     public StudentResponseDto updateStudent(Long id, StudentRequestDto requestDto) {
         Student existingStudent = findStudentOrThrow(id);
 
